@@ -33,11 +33,9 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
+// ✅ FIXED: Remove app.options('*', ...) and just use:
 app.use(cors(corsOptions));
-app.use(cors(corsOptions));
-app.options('*', (req, res) => {
-  res.sendStatus(200);
-});
+
 
 
 
