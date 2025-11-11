@@ -247,3 +247,5 @@ httpServer.listen(PORT, () => {
   console.log(`🚀 Ready to connect the world!`);
   console.log(`💬 Socket.io ready for real-time chat`);
 });
+// Export for Vercel
+export default app;
