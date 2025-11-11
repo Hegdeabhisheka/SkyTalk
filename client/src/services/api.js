@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:4000/api';
+// Use environment variable for API URL, fallback to localhost for development
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -41,7 +42,8 @@ api.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
-        const response = await axios.post(`${API_URL}/auth/refresh-token`, {
+        const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
+        const response = await axios.post(`${baseURL}/auth/refresh-token`, {
           refreshToken,
         });
 

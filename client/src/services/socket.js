@@ -1,6 +1,9 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:4000';
+// Use environment variable for Socket URL, fallback to localhost for development
+const SOCKET_URL = process.env.REACT_APP_API_URL 
+  ? process.env.REACT_APP_API_URL.replace('/api', '') 
+  : 'http://localhost:4000';
 
 let socket = null;
 

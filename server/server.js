@@ -16,50 +16,91 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-// Socket.io configuration
-const io = new Server(httpServer, {
-  cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
-    credentials: true
-  }
-});
+// ============================================
+// CORS CONFIGURATION (Updated for Production)
+// ============================================
 
-// CORS configuration
-// Add your production URLs to CORS
 const corsOptions = {
   origin: [
-    'http://localhost:3000',              // Development
-    'https://your-vercel-domain.vercel.app'  // Production
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:4000',
+    process.env.FRONTEND_URL || '*'
   ],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
-// Routes
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: '☁️ Sky Talk Server is working!',
+// ============================================
+// SOCKET.IO CONFIGURATION
+// ============================================
+
+const io = new Server(httpServer, {
+  cors: corsOptions,
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
+});
+
+// ============================================
+// TEST ROUTES
+// ============================================
+
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: '☁️ Sky Talk Backend API',
     version: '1.0.0',
-    status: 'online'
+    status: 'running',
+    endpoints: {
+      auth: '/api/auth',
+      friends: '/api/friends',
+      chat: '/api/chat'
+    }
   });
 });
+
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    success: true,
+    message: '✅ Sky Talk Server is working!',
+    version: '1.0.0',
+    status: 'online',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ============================================
+// API ROUTES
+// ============================================
 
 app.use('/api/auth', authRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api/chat', chatRoutes);
 
-// MongoDB connection
+// ============================================
+// MONGODB CONNECTION
+// ============================================
+
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB Connected to Sky Talk Database'))
   .catch(err => console.error('❌ MongoDB Error:', err));
 
-// Store online users
+// ============================================
+// SOCKET.IO - ONLINE USERS
+// ============================================
+
 const onlineUsers = new Map();
 
-// Socket.io authentication middleware
+// ============================================
+// SOCKET.IO - AUTHENTICATION MIDDLEWARE
+// ============================================
+
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
@@ -84,7 +125,10 @@ io.use(async (socket, next) => {
   }
 });
 
-// Socket.io connection handling
+// ============================================
+// SOCKET.IO - CONNECTION HANDLING
+// ============================================
+
 io.on('connection', (socket) => {
   console.log(`✅ User connected: ${socket.username} (${socket.userId})`);
   
@@ -97,7 +141,10 @@ io.on('connection', (socket) => {
   // Join personal room
   socket.join(socket.userId);
 
-  // Send private message
+  // ============================================
+  // SEND MESSAGE
+  // ============================================
+
   socket.on('send-message', async (data) => {
     try {
       const { receiverId, message, messageType, fileUrl, fileName, fileSize, fileType } = data;
@@ -171,7 +218,10 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Typing indicator
+  // ============================================
+  // TYPING INDICATORS
+  // ============================================
+
   socket.on('typing', ({ receiverId }) => {
     const receiverSocketId = onlineUsers.get(receiverId);
     if (receiverSocketId) {
@@ -182,7 +232,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Stop typing
   socket.on('stop-typing', ({ receiverId }) => {
     const receiverSocketId = onlineUsers.get(receiverId);
     if (receiverSocketId) {
@@ -191,47 +240,52 @@ io.on('connection', (socket) => {
       });
     }
   });
-// Add this inside io.on('connection') handler, before the disconnect event:
 
-// Delete message
-socket.on('delete-message', async (data) => {
-  try {
-    const { messageId, receiverId } = data;
+  // ============================================
+  // DELETE MESSAGE
+  // ============================================
 
-    const message = await Message.findById(messageId);
-    
-    if (!message) {
-      socket.emit('error', { message: 'Message not found' });
-      return;
-    }
+  socket.on('delete-message', async (data) => {
+    try {
+      const { messageId, receiverId } = data;
 
-    message.isDeleted = true;
-    message.deletedBy = socket.userId === message.sender.toString() ? 'sender' : 'receiver';
-    await message.save();
+      const message = await Message.findById(messageId);
+      
+      if (!message) {
+        socket.emit('error', { message: 'Message not found' });
+        return;
+      }
 
-    console.log(`🗑️ Message deleted by ${socket.username}`);
+      message.isDeleted = true;
+      message.deletedBy = socket.userId === message.sender.toString() ? 'sender' : 'receiver';
+      await message.save();
 
-    // Notify both users
-    const receiverSocketId = onlineUsers.get(receiverId);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('message-deleted', {
+      console.log(`🗑️ Message deleted by ${socket.username}`);
+
+      // Notify both users
+      const receiverSocketId = onlineUsers.get(receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('message-deleted', {
+          messageId: message._id,
+          deletedBy: message.deletedBy
+        });
+      }
+
+      socket.emit('message-deleted', {
         messageId: message._id,
         deletedBy: message.deletedBy
       });
+
+    } catch (error) {
+      console.error('❌ Delete message error:', error);
+      socket.emit('error', { message: 'Failed to delete message' });
     }
+  });
 
-    socket.emit('message-deleted', {
-      messageId: message._id,
-      deletedBy: message.deletedBy
-    });
+  // ============================================
+  // DISCONNECT
+  // ============================================
 
-  } catch (error) {
-    console.error('❌ Delete message error:', error);
-    socket.emit('error', { message: 'Failed to delete message' });
-  }
-});
-
-  // Disconnect
   socket.on('disconnect', () => {
     console.log(`❌ User disconnected: ${socket.username}`);
     onlineUsers.delete(socket.userId);
@@ -241,11 +295,39 @@ socket.on('delete-message', async (data) => {
   });
 });
 
-const PORT = process.env.PORT || 4000;
-httpServer.listen(PORT, () => {
-  console.log(`☁️ Sky Talk Server running on http://localhost:${PORT}`);
-  console.log(`🚀 Ready to connect the world!`);
-  console.log(`💬 Socket.io ready for real-time chat`);
+// ============================================
+// ERROR HANDLING
+// ============================================
+
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
-// Export for Vercel
+
+// ============================================
+// START SERVER (Local Development Only)
+// ============================================
+
+const PORT = process.env.PORT || 4000;
+
+// Only start server locally, NOT on Vercel
+if (process.env.VERCEL !== '1' && process.env.NODE_ENV !== 'production') {
+  httpServer.listen(PORT, () => {
+    console.log('\n' + '═'.repeat(60));
+    console.log(`☁️ Sky Talk Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Ready to connect the world!`);
+    console.log(`💬 Socket.io ready for real-time chat`);
+    console.log('═'.repeat(60) + '\n');
+  });
+}
+
+// ============================================
+// EXPORT FOR VERCEL (Important!)
+// ============================================
+
 export default app;
+export { io, httpServer };
