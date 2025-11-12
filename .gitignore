@@ -34,3 +34,4 @@ logs/
 .cache/
 .vercel/
 .railway/
+.vercel

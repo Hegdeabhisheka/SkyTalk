@@ -6,6 +6,9 @@ import OTPVerify from './components/Auth/OTPVerify';
 import Dashboard from './components/Dashboard/Dashboard';
 import './styles/global.css';
 import './styles/animations.css';
+import ForgotPassword from './components/Auth/ForgotPassword';
+import ResetPassword from './components/Auth/ResetPassword';
+
 
 // Protected Route Component
 function ProtectedRoute({ children }) {
@@ -77,6 +80,9 @@ function App() {
             </ProtectedRoute>
           } 
         />
+        // Add these routes
+<Route path="/forgot-password" element={<ForgotPassword />} />
+<Route path="/reset-password/:token" element={<ResetPassword />} />
 
         {/* Catch all - redirect to login */}
         <Route path="*" element={<Navigate to="/login" replace />} />

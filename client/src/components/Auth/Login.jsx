@@ -89,6 +89,24 @@ function Login() {
               <label>Password</label>
             </div>
 
+            {/* 🆕 Forgot Password Link */}
+            <div style={{ 
+              textAlign: 'right', 
+              marginTop: '-10px', 
+              marginBottom: '20px' 
+            }}>
+              <Link 
+                to="/forgot-password" 
+                className="auth-link"
+                style={{ 
+                  fontSize: '14px',
+                  textDecoration: 'none'
+                }}
+              >
+                Forgot Password?
+              </Link>
+            </div>
+
             <div className="form-actions">
               <button 
                 type="submit" 

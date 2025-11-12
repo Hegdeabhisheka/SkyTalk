@@ -211,28 +211,6 @@ export const sendOTPEmail = async (email, username, otp) => {
               background: #eee;
               margin: 30px 0;
             }
-            .info-grid {
-              display: table;
-              width: 100%;
-              font-size: 13px;
-              color: #666;
-              margin: 20px 0;
-            }
-            .info-row {
-              display: table-row;
-            }
-            .info-label {
-              display: table-cell;
-              padding: 8px 0;
-              font-weight: 600;
-              color: #333;
-              width: 100px;
-            }
-            .info-value {
-              display: table-cell;
-              padding: 8px 0;
-              padding-left: 20px;
-            }
           </style>
         </head>
         <body>
@@ -322,6 +300,54 @@ export const sendOTPEmail = async (email, username, otp) => {
     console.log('═'.repeat(60) + '\n');
     
     return Promise.resolve();
+  }
+};
+
+// ============================================
+// 🆕 SEND GENERIC EMAIL - FOR PASSWORD RESET
+// ============================================
+
+export const sendEmail = async (to, subject, html) => {
+  if (!emailServiceEnabled || !transporter) {
+    console.log('\n' + '═'.repeat(60));
+    console.log('📧 EMAIL (Development Mode):');
+    console.log('═'.repeat(60));
+    console.log(`📧 To: ${to}`);
+    console.log(`📝 Subject: ${subject}`);
+    console.log('═'.repeat(60) + '\n');
+    
+    return Promise.resolve();
+  }
+
+  try {
+    console.log('\n📧 Sending email to:', to);
+    console.log('   Subject:', subject);
+    
+    const mailOptions = {
+      from: `"Sky Talk ☁️" <${process.env.EMAIL_USER}>`,
+      to: to,
+      subject: subject,
+      html: html
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log('✅ Email sent successfully');
+    console.log('   Message ID:', info.messageId);
+    console.log('   To:', to);
+    
+    return info;
+
+  } catch (error) {
+    console.error('❌ Failed to send email:');
+    console.error('   Error:', error.message);
+    console.error('   Code:', error.code);
+    
+    console.log('\n📧 EMAIL FALLBACK (Email Failed):');
+    console.log(`   Intended for: ${to}`);
+    console.log(`   Subject: ${subject}`);
+    
+    throw new Error('Failed to send email: ' + error.message);
   }
 };
 

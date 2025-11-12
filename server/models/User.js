@@ -30,6 +30,16 @@ const userSchema = new mongoose.Schema({
   otpBlockedUntil: { type: Date },
   lastOtpRequest: { type: Date },
   
+  // 🆕 Password Reset fields
+  resetPasswordToken: { 
+    type: String, 
+    default: null 
+  },
+  resetPasswordExpires: { 
+    type: Date, 
+    default: null 
+  },
+  
   friends: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
