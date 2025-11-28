@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "react-scripts": "^5.0.1"
+  },
+  "scripts": {
+    "vercel-build": "npx react-scripts build"
+  }
+}
