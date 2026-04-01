@@ -80,7 +80,7 @@ function App() {
             </ProtectedRoute>
           } 
         />
-        // Add these routes
+
 <Route path="/forgot-password" element={<ForgotPassword />} />
 <Route path="/reset-password/:token" element={<ResetPassword />} />
 
