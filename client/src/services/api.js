@@ -1,9 +1,7 @@
 import axios from 'axios';
 
 // Use environment variable for API URL, fallback to localhost for development
-const API_URL =
-  process.env.REACT_APP_API_URL ||
-  'https://skytalk-o18d.onrender.com/api';
+const API_URL ='https://skytalk-o18d.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -44,7 +42,7 @@ api.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
-        const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
+        const baseURL = 'https://skytalk-o18d.onrender.com/api';
         const response = await axios.post(`${baseURL}/auth/refresh-token`, {
           refreshToken,
         });
